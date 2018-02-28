@@ -1,0 +1,100 @@
+/*
+In a 3x3 magic square, n = 3
+Using magic constant = n[(n^2+1)/2]
+Results in 3 * [(9 + 1) / 2] = 15
+
+board      magicSquare  worst case (5 picks)
+|1|2|3|    |4|9|2|      |X|O|X|
+|4|5|6|    |3|5|7|      |O|O|X|
+|7|8|9|    |8|1|6|      |O|X|X|
+
+To play enter `choose(square)` in the console where square is a number 1-9
+*/
+
+let playerX = {token: 'X', picks: []};
+let playerO = {token: 'O', picks: []};
+
+// See https://en.wikipedia.org/wiki/Magic_square for techniques for constructing magic Squares
+const magicSquare = [4,9,2,3,5,7,8,1,6];
+const magicTotal = 15;
+let board = "|1|2|3|\n|4|5|6|\n|7|8|9|";
+
+let turn = 0;
+let taken = {};
+let currentPlayer = playerX;
+
+function getSum(total, num) {
+    return total + num;
+}
+
+function isWinner(currentPlayer) {
+    // Could speed things up a bit by keeping the sum as part of the player object
+    let total = currentPlayer['picks'].reduce(getSum);
+    let len = currentPlayer['picks'].length;
+
+    //console.log(currentPlayer, total, len);
+
+    // Case 1 - Not enough picks
+    if (len < 3) { return false; }
+
+    // Case 2 - the trivial win case
+    if (total === magicTotal && len === 3) { return true; }
+
+    // Case 3 - Too many picks to equal the magicTotal
+    if (total === magicTotal  && len > 3) { return false; }
+
+    // Case 4 - Any 3 picks that add up to the magic number win
+    // Could be optimized since we know the 4th pick is part of any winning solution
+    if (currentPlayer['picks'].length === 4) {
+        let winner = false;
+        currentPlayer['picks'].forEach(function(pick) {
+            if(total - pick === magicTotal) {winner =  true}
+        });
+        return winner;
+    }
+
+    // Did the last play of the game win?
+    // Could be optimized since we know the 5th pick is part of any winning solution
+    if (currentPlayer['picks'].length === 5) {
+        let winner = false;
+        currentPlayer['picks'].forEach(function(pick) {
+            let subTotal = total - pick;
+            let subPicks = currentPlayer['picks'].filter(e => e !== pick);
+            subPicks.forEach(function(pick) {
+                //console.log(subPicks, pick, subTotal);
+                if(subTotal - pick === magicTotal) {winner = true}
+            });
+        });
+        return winner;
+    }
+    return false;
+}
+
+function choose(square) {
+    if (taken[square]) {
+        return 'square ' + square + ' is already taken';
+    } else {
+        currentPlayer['picks'].push(magicSquare[square - 1]);
+        board = board.replace(square, currentPlayer['token']);
+
+        // simplest win test we need another test to check if any 3 choices add up to 15
+        if (isWinner(currentPlayer)) {
+            console.log(board);
+            return 'player ' + currentPlayer['token'] + ' wins!';
+        } else {
+            taken[square] = true;
+            console.log(currentPlayer['token'] + ' chose square ' + square);
+            currentPlayer = currentPlayer === playerX ? playerO : playerX;
+            console.log(board);
+
+            turn++;
+            if (turn === 9) {
+                // TODO: add game reset
+                return 'game is a draw';
+            }
+
+            // Using return here to keep from printing undefined in the console
+            return "turn " + turn + ", " + currentPlayer['token'] + "s are next";
+        }
+    }
+};
